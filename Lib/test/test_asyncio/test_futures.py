@@ -821,6 +821,16 @@ class CFutureTests(BaseFutureTests, test_utils.TestCase):
         with self.assertRaises(StopIteration):
             next(it)
 
+    def test_futureiter_send_after_close_no_crash(self):
+        fut = self._new_future(loop=self.loop)
+        it = fut.__await__()
+        next(it)
+        it.close()
+        with self.assertRaises(StopIteration):
+            it.send(None)
+        with self.assertRaises(StopIteration):
+            next(it)   # also tests the __next__ entry point
+
 
 @unittest.skipUnless(hasattr(futures, '_CFuture'),
                      'requires the C _asyncio module')

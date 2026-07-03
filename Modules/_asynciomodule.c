@@ -1860,18 +1860,29 @@ FutureIter_am_send(PyObject *op,
                    PyObject **result)
 {
     futureiterobject *it = (futureiterobject*)op;
-    /* arg is unused, see the comment on FutureIter_send for clarification */
-    PySendResult res;
 
-    if (it->future == NULL) {
+    // Safely load it->future under the iterator's own lock.
+    // This prevents a data race with FutureIter_clear()/throw()
+    // which write it->future = NULL without any lock.
+
+    Py_BEGIN_CRITICAL_SECTION(op);
+    PyObject *fut = Py_XNewRef(it->future);
+    Py_END_CRITICAL_SECTION();
+
+    if (fut == NULL) {
         PyErr_SetNone(PyExc_StopIteration);
         *result = NULL;
         return PYGEN_ERROR;
     }
 
-    Py_BEGIN_CRITICAL_SECTION(it->future);
+    /* arg is unused, see the comment on FutureIter_send for clarification */
+    PySendResult res;
+
+    Py_BEGIN_CRITICAL_SECTION(fut);
     res = FutureIter_am_send_lock_held(it, result);
     Py_END_CRITICAL_SECTION();
+
+    Py_DECREF(fut);
     return res;
 }
 
