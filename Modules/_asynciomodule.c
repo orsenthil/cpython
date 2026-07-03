@@ -1860,13 +1860,14 @@ FutureIter_am_send(PyObject *op,
                    PyObject **result)
 {
     futureiterobject *it = (futureiterobject*)op;
+    PyObject *fut = NULL;
 
     // Safely load it->future under the iterator's own lock.
     // This prevents a data race with FutureIter_clear()/throw()
     // which write it->future = NULL without any lock.
 
     Py_BEGIN_CRITICAL_SECTION(op);
-    PyObject *fut = Py_XNewRef(it->future);
+    fut = Py_XNewRef(it->future);
     Py_END_CRITICAL_SECTION();
 
     if (fut == NULL) {
