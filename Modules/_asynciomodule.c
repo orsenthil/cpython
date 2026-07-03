@@ -1862,6 +1862,12 @@ FutureIter_am_send(PyObject *op,
     futureiterobject *it = (futureiterobject*)op;
     /* arg is unused, see the comment on FutureIter_send for clarification */
     PySendResult res;
+
+    if (it->future == NULL) {
+        *result = NULL;
+        return PYGEN_RETURN;
+    }
+
     Py_BEGIN_CRITICAL_SECTION(it->future);
     res = FutureIter_am_send_lock_held(it, result);
     Py_END_CRITICAL_SECTION();
