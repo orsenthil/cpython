@@ -1864,6 +1864,7 @@ FutureIter_am_send(PyObject *op,
     PySendResult res;
 
     if (it->future == NULL) {
+        PyErr_SetNone(PyExc_StopIteration);
         *result = NULL;
         return PYGEN_RETURN;
     }
