@@ -1826,10 +1826,10 @@ FutureIter_dealloc(PyObject *it)
 }
 
 static PySendResult
-FutureIter_am_send_lock_held(futureiterobject *it, PyObject **result)
+FutureIter_am_send_lock_held(FutureObj *fut, PyObject **result)
 {
     PyObject *res;
-    FutureObj *fut = it->future;
+
     _Py_CRITICAL_SECTION_ASSERT_OBJECT_LOCKED(fut);
 
     *result = NULL;
@@ -1862,10 +1862,6 @@ FutureIter_am_send(PyObject *op,
     futureiterobject *it = (futureiterobject*)op;
     PyObject *fut = NULL;
 
-    // Safely load it->future under the iterator's own lock.
-    // This prevents a data race with FutureIter_clear()/throw()
-    // which write it->future = NULL without any lock.
-
     Py_BEGIN_CRITICAL_SECTION(op);
     fut = Py_XNewRef(it->future);
     Py_END_CRITICAL_SECTION();
@@ -1880,7 +1876,7 @@ FutureIter_am_send(PyObject *op,
     PySendResult res;
 
     Py_BEGIN_CRITICAL_SECTION(fut);
-    res = FutureIter_am_send_lock_held(it, result);
+    res = FutureIter_am_send_lock_held((FutureObj*)fut, result);
     Py_END_CRITICAL_SECTION();
 
     Py_DECREF(fut);
