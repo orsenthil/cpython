@@ -788,6 +788,39 @@ class CFutureTests(BaseFutureTests, test_utils.TestCase):
         fut.remove_done_callback(f2)
         self.assertIsNone(fut._callbacks)
 
+    def test_future_iter_send_after_throw(self):
+        # Regression test: FutureIter_am_send must not deference
+        # it->future when it is NULL (set by throw() or close()).
+        # Previously caused a NULL pointer dereference / SIGSEGV.
+        # See https://github.com/python/cpython/issues/146065
+        fut = self._new_future(loop=self.loop)
+        it = fut.__await__()
+        it.__next__() # advances iterator, sets fut_blocking
+
+        try:
+            it.throw(RuntimeError("test"))
+        except RuntimeError:
+            pass
+
+        # it->future is now NULL; send/next must raise StopIteration,
+        # not segfault or abort.
+
+        with self.assertRaises(StopIteration):
+            it.send(None)
+
+    def test_future_iter_send_after_close(self):
+        # Same NULL deference can occur via close(), which also
+        # calls Py_CLEAR(it->future).
+        fut = self._new_future(loop=self.loop)
+        it = fut.__await__()
+        it.__next__()   # advance past first yield
+
+        it.close()
+        with self.assertRaises(StopIteration):
+            it.send(None)
+        with self.assertRaises(StopIteration):
+            next(it)
+
 
 @unittest.skipUnless(hasattr(futures, '_CFuture'),
                      'requires the C _asyncio module')
