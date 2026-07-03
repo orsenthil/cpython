@@ -1866,7 +1866,7 @@ FutureIter_am_send(PyObject *op,
     if (it->future == NULL) {
         PyErr_SetNone(PyExc_StopIteration);
         *result = NULL;
-        return PYGEN_RETURN;
+        return PYGEN_ERROR;
     }
 
     Py_BEGIN_CRITICAL_SECTION(it->future);
